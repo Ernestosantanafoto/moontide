@@ -48,7 +48,6 @@
             position: relative; margin-bottom: 20px; overflow: hidden;
         }
 
-        /* La sombra ahora no tiene el background fijo en CSS, se lo inyectamos dinámicamente en JS */
         .moon-shadow {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             border-radius: 50%;
@@ -163,21 +162,13 @@
             return { text: phaseText, illum: illum.toFixed(0), phaseValue: phase };
         }
 
-        // --- LÓGICA DE SOMBRA LUNAR CORREGIDA ---
         function drawMoon(phaseValue) {
             let offset;
             
-            // La fase va de 0 (Nueva) a 0.5 (Llena) a 1 (Nueva de nuevo)
             if (phaseValue <= 0.5) {
-                // FASE CRECIENTE: La sombra se retira hacia la izquierda
-                // En fase 0: offset = 0 (cubre totalmente)
-                // En fase 0.5: offset = -100% (fuera de plano)
                 offset = -(phaseValue * 200); 
                 moonShadow.style.background = 'linear-gradient(to right, rgba(1, 4, 10, 0.98) 50%, rgba(1, 4, 10, 0.8) 80%, rgba(1, 4, 10, 0) 100%)';
             } else {
-                // FASE MENGUANTE: La sombra entra por la derecha
-                // En fase 0.51: offset = 100% (fuera de plano por la derecha)
-                // En fase 1.0: offset = 0% (cubre totalmente de nuevo)
                 offset = 100 - ((phaseValue - 0.5) * 200);
                 moonShadow.style.background = 'linear-gradient(to left, rgba(1, 4, 10, 0.98) 50%, rgba(1, 4, 10, 0.8) 80%, rgba(1, 4, 10, 0) 100%)';
             }
@@ -185,22 +176,27 @@
             moonShadow.style.transform = `translateX(${offset}%)`;
         }
 
-        async function fetchMarineData() {
+        // FETCH CON PROMESAS CLÁSICAS (Sin async/await para máxima compatibilidad)
+        function fetchMarineData() {
             const lat = 28.12; const lon = -15.43;
             const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=sea_level_height_msl&timezone=auto&past_days=1`;
             
-            try {
-                const response = await fetch(url);
-                if(response.ok) {
-                    const data = await response.json();
+            fetch(url)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error("Error de conexión");
+                })
+                .then(data => {
                     marineData = data.hourly.sea_level_height_msl;
                     timeData = data.hourly.time.map(t => new Date(t));
                     renderCanvas();
                     centerScrollOnNow();
-                }
-            } catch (error) {
-                console.error("Error conectando a la API de mareas");
-            }
+                })
+                .catch(error => {
+                    console.error("Error conectando a la API de mareas", error);
+                });
         }
 
         const PX_PER_HOUR = 30;
@@ -283,4 +279,57 @@
                     const timeStr = timeData[i].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
                     ctx.fillText(`PLEAMAR (${timeStr})`, x, y - 20); ctx.fillText("+" + curr.toFixed(1) + "M", x, y - 5);
                 }
-                else if (curr
+                else if (curr < prev && curr < next) {
+                    const timeStr = timeData[i].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+                    ctx.fillText(`BAJAMAR (${timeStr})`, x, y + 20); ctx.fillText(curr.toFixed(1) + "M", x, y + 30);
+                }
+            }
+        }
+
+        function updateUIViaScroll() {
+            if(!timeData.length) return;
+            const centerScrollX = scrollContainer.scrollLeft + (scrollContainer.clientWidth / 2);
+            let hoverIndex = Math.floor(centerScrollX / PX_PER_HOUR);
+            if (hoverIndex < 0) hoverIndex = 0; if (hoverIndex >= timeData.length) hoverIndex = timeData.length - 1;
+            const hoverDate = timeData[hoverIndex];
+            
+            dateDisplay.innerText = formatDate(hoverDate);
+            const moon = calculateMoon(hoverDate);
+            phaseName.innerText = moon.text; illumination.innerText = moon.illum + "%";
+            drawMoon(moon.phaseValue);
+            
+            const timeStr = hoverDate.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
+            currentTimeEl.innerText = timeStr;
+            const validData = marineData.filter(v => v !== null);
+            tideHeightEl.innerText = "+" + Math.max(...validData).toFixed(1) + " M";
+            
+            let foundNext = false;
+            for(let j = hoverIndex + 1; j < marineData.length - 1; j++) {
+                const prev = marineData[j-1]; const curr = marineData[j]; const next = marineData[j+1];
+                if (curr > prev && curr > next) {
+                    nextTideEl.innerText = `PLEAMAR (${timeData[j].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase()})`;
+                    foundNext = true; break;
+                } else if (curr < prev && curr < next) {
+                    nextTideEl.innerText = `BAJAMAR (${timeData[j].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase()})`;
+                    foundNext = true; break;
+                }
+            }
+            if(!foundNext) nextTideEl.innerText = "--:--";
+        }
+
+        function centerScrollOnNow() {
+            const now = new Date(); let closestIndex = 0; let minDiff = Infinity;
+            for(let i=0; i<timeData.length; i++) {
+                const diff = Math.abs(now - timeData[i]);
+                if(diff < minDiff) { minDiff = diff; closestIndex = i; }
+            }
+            const targetX = (closestIndex * PX_PER_HOUR) - (scrollContainer.clientWidth / 2);
+            scrollContainer.scrollLeft = targetX;
+            updateUIViaScroll();
+        }
+
+        scrollContainer.addEventListener('scroll', () => { requestAnimationFrame(updateUIViaScroll); });
+        fetchMarineData();
+    </script>
+</body>
+</html>
