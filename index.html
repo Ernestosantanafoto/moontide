@@ -6,18 +6,19 @@
     <title>Lumina - Luna y Marea</title>
     <style>
         :root {
-            --bg-color: #040b16;
+            --bg-color: #01040a;
             --text-main: #ffffff;
             --text-muted: #8ab4f8;
             --neon-blue: #00d2ff;
             --card-bg: rgba(255, 255, 255, 0.05);
+            --terminator-gradient: rgba(1, 4, 10, 0.95);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         
         body {
             background: var(--bg-color);
-            background-image: radial-gradient(circle at 50% 0%, #0d2240 0%, #040b16 70%);
+            background-image: radial-gradient(circle at 50% 0%, #0d2240 0%, #01040a 70%);
             color: var(--text-main);
             height: 100vh;
             display: flex;
@@ -25,26 +26,37 @@
             overflow: hidden;
         }
 
-        header { text-align: center; padding: 20px 10px 10px; z-index: 10; }
-        h1 { font-size: 14px; font-weight: 600; letter-spacing: 1px; color: var(--text-main); }
-        #date-display { font-size: 12px; font-weight: 400; color: var(--text-muted); margin-top: 5px; letter-spacing: 0.5px; }
-
-        /* Luna Fotorrealista */
-        .moon-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 10px; }
-        .moon-visual {
-            width: 180px; height: 180px; border-radius: 50%;
-            /* Usamos una textura realista de mapa lunar de la NASA/dominio público */
-            background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg');
+        /* Cielo Nocturno Atmosférico */
+        header, .moon-section {
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e0/Night_Sky_with_Clouds.jpg');
             background-size: cover;
             background-position: center;
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.2), inset -20px -20px 40px rgba(0,0,0,0.8);
-            position: relative; margin-bottom: 20px; overflow: hidden;
+            background-repeat: no-repeat;
         }
 
-        /* Sombra negra que simula la fase lunar */
+        header { text-align: center; padding: 20px 10px 10px; z-index: 10; background-color: rgba(1, 4, 10, 0.3); }
+        h1 { font-size: 14px; font-weight: 600; letter-spacing: 1px; color: var(--text-main); text-transform: uppercase; }
+        #date-display { font-size: 12px; font-weight: 400; color: var(--text-muted); margin-top: 5px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        /* Luna fotorrealista corregida */
+        .moon-section {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 20px;
+            background-color: rgba(1, 4, 10, 0.2); 
+        }
+        .moon-visual {
+            width: 180px; height: 180px; border-radius: 50%;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg');
+            background-size: cover; background-position: center;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.2), inset -20px -20px 40px rgba(0,0,0,0.8);
+            position: relative; margin-bottom: 20px; overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* Sombra de terminador con degradado sutil */
         .moon-shadow {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.9); border-radius: 50%;
+            background: linear-gradient(to right, rgba(1, 4, 10, 0.95), rgba(1, 4, 10, 0.8) 70%, rgba(1, 4, 10, 0) 100%);
+            border-radius: 50%;
             transform: translateX(100%);
             transition: transform 0.1s linear;
         }
@@ -53,7 +65,7 @@
         .phase-name { font-size: 20px; font-weight: 600; margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
         .illumination { font-size: 16px; font-weight: 300; }
 
-        /* Sección de Marea Deslizante */
+        /* Marea Deslizante Suave */
         .tide-section {
             flex: 1; background: rgba(0, 40, 80, 0.2); border-top-left-radius: 30px; border-top-right-radius: 30px;
             backdrop-filter: blur(10px); padding: 20px 0; position: relative; display: flex; flex-direction: column;
@@ -62,20 +74,15 @@
 
         .tide-header { text-align: center; margin-bottom: 10px; }
         
-        /* Contenedor con scroll nativo fluido */
         .scroll-container {
             width: 100%; height: 140px; overflow-x: auto; overflow-y: hidden; 
             scroll-behavior: auto; -webkit-overflow-scrolling: touch;
-            /* Ocultar barra de scroll */
-            scrollbar-width: none; 
-            position: relative;
+            scrollbar-width: none; position: relative;
         }
         .scroll-container::-webkit-scrollbar { display: none; }
         
-        /* El lienzo es mucho más ancho que la pantalla para alojar 7 días */
         canvas { height: 100%; display: block; }
 
-        /* Línea indicadora central (el "ahora" o el punto que miramos) */
         .center-marker {
             position: absolute; top: 0; left: 50%; width: 2px; height: 140px;
             background: rgba(255, 255, 255, 0.4); border-left: 1px dashed var(--neon-blue);
@@ -115,9 +122,9 @@
         </div>
 
         <div class="info-panels">
-            <div class="panel"><div class="panel-label">HORA SELECC.</div><div class="panel-value" id="current-time">--:--</div></div>
-            <div class="panel"><div class="panel-label">SIGUIENTE EVENTO</div><div class="panel-value" id="next-tide">--:--</div></div>
-            <div class="panel"><div class="panel-label">ESTADO</div><div class="panel-value" id="tide-state" style="color: var(--neon-blue);">--</div></div>
+            <div class="panel"><div class="panel-label">ACTUAL</div><div class="panel-value" id="current-time">--:--</div></div>
+            <div class="panel"><div class="panel-label">BAJAMAR (20:45)</div><div class="panel-value" id="next-tide">--:--</div></div>
+            <div class="panel"><div class="panel-label">ALTURA MÁX</div><div class="panel-value" id="tide-height">--</div></div>
         </div>
     </div>
 
@@ -126,7 +133,6 @@
         let timeData = [];
         const today = new Date();
         
-        // Elementos DOM
         const dateDisplay = document.getElementById('date-display');
         const phaseName = document.getElementById('phase-name');
         const illumination = document.getElementById('illumination');
@@ -134,11 +140,11 @@
         const tideState = document.getElementById('tide-state');
         const currentTimeEl = document.getElementById('current-time');
         const nextTideEl = document.getElementById('next-tide');
+        const tideHeightEl = document.getElementById('tide-height');
         const canvas = document.getElementById('tide-canvas');
         const ctx = canvas.getContext('2d');
         const scrollContainer = document.getElementById('scroll-container');
 
-        // Formatear fechas en MAYÚSCULAS
         function formatDate(dateObj) {
             const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
             return dateObj.toLocaleDateString('es-ES', options).toUpperCase();
@@ -166,16 +172,14 @@
             return { text: phaseText, illum: illum.toFixed(0), phaseValue: phase };
         }
 
-        // Dibujar sombra sobre la luna realista
+        // Dibujar terminador sutil
         function drawMoon(phaseValue) {
-            // Un truco matemático simple para desplazar la sombra negra y simular la fase
             let offset = (phaseValue * 200) - 100; 
-            // Invertimos la sombra en la segunda mitad del ciclo
             if(phaseValue > 0.5) offset = (phaseValue * 200) - 300; 
             moonShadow.style.transform = `translateX(${offset}%)`;
         }
 
-        // --- FETCH DATOS ---
+        // --- FETCH DATOS (Corregido: sea_level_height_msl) ---
         async function fetchMarineData() {
             const lat = 28.12; const lon = -15.43;
             const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=sea_level_height_msl&timezone=auto&past_days=1`;
@@ -187,7 +191,6 @@
                     marineData = data.hourly.sea_level_height_msl;
                     timeData = data.hourly.time.map(t => new Date(t));
                     renderCanvas();
-                    // Centrar el scroll en la hora actual
                     centerScrollOnNow();
                 }
             } catch (error) {
@@ -195,33 +198,44 @@
             }
         }
 
-        // --- RENDERIZADO DEL GRÁFICO ---
-        const PX_PER_HOUR = 30; // Píxeles de ancho por cada hora
+        // --- RENDERIZADO DEL GRÁFICO SUAVE ---
+        const PX_PER_HOUR = 30; 
 
         function renderCanvas() {
             if(!marineData.length) return;
 
-            // Ajustar el ancho del canvas para que quepan todos los datos en línea
             canvas.width = marineData.length * PX_PER_HOUR;
             canvas.height = 140; 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Ignorar nulos
             const validData = marineData.filter(v => v !== null);
             const minH = Math.min(...validData); 
             const maxH = Math.max(...validData);
             const range = (maxH - minH) || 1;
 
-            // Trazar línea
+            // Trazar línea suave con curvas Bézier cúbicas
             ctx.beginPath();
             ctx.moveTo(0, canvas.height);
             
-            for(let i=0; i<marineData.length; i++) {
+            for(let i=0; i<marineData.length - 1; i++) {
                 if(marineData[i] === null) continue;
-                const x = i * PX_PER_HOUR;
-                const normalizedY = (marineData[i] - minH) / range;
-                const y = canvas.height - (normalizedY * (canvas.height - 60)) - 30; 
-                ctx.lineTo(x, y);
+                
+                const x0 = i * PX_PER_HOUR;
+                const normalizedY0 = (marineData[i] - minH) / range;
+                const y0 = canvas.height - (normalizedY0 * (canvas.height - 60)) - 30; 
+
+                const x1 = (i + 1) * PX_PER_HOUR;
+                const normalizedY1 = (marineData[i + 1] - minH) / range;
+                const y1 = canvas.height - (normalizedY1 * (canvas.height - 60)) - 30; 
+                
+                // Usamos la técnica de Bézier para conectar puntos
+                const cp1x = x0 + (x1 - x0) / 2;
+                const cp1y = y0;
+                const cp2x = x0 + (x1 - x0) / 2;
+                const cp2y = y1;
+                
+                if(i===0) ctx.moveTo(x0, y0);
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x1, y1);
             }
             
             ctx.lineTo(canvas.width, canvas.height);
@@ -234,134 +248,80 @@
             ctx.fillStyle = gradient;
             ctx.fill();
 
-            // Borde brillante
+            // Borde brillante suave
             ctx.beginPath();
-            for(let i=0; i<marineData.length; i++) {
+            for(let i=0; i<marineData.length - 1; i++) {
                 if(marineData[i] === null) continue;
-                const x = i * PX_PER_HOUR;
-                const normalizedY = (marineData[i] - minH) / range;
-                const y = canvas.height - (normalizedY * (canvas.height - 60)) - 30; 
-                if(i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                const x0 = i * PX_PER_HOUR;
+                const normalizedY0 = (marineData[i] - minH) / range;
+                const y0 = canvas.height - (normalizedY0 * (canvas.height - 60)) - 30; 
+                const x1 = (i + 1) * PX_PER_HOUR;
+                const normalizedY1 = (marineData[i + 1] - minH) / range;
+                const y1 = canvas.height - (normalizedY1 * (canvas.height - 60)) - 30; 
+                const cp1x = x0 + (x1 - x0) / 2; const cp1y = y0;
+                const cp2x = x0 + (x1 - x0) / 2; const cp2y = y1;
+                if(i===0) ctx.moveTo(x0, y0);
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x1, y1);
             }
             ctx.strokeStyle = "#00d2ff";
             ctx.lineWidth = 3;
-            // Efecto Glow
-            ctx.shadowColor = "#00d2ff";
-            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#00d2ff"; ctx.shadowBlur = 10;
             ctx.stroke();
-            
-            // Limpiar sombra para los textos
             ctx.shadowBlur = 0; 
             
             // Dibujar marcadores de PLEAMAR y BAJAMAR
-            ctx.fillStyle = "white";
-            ctx.font = "10px -apple-system, sans-serif";
-            ctx.textAlign = "center";
+            ctx.fillStyle = "white"; ctx.font = "10px -apple-system, sans-serif"; ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
 
             for(let i=1; i<marineData.length - 1; i++) {
                 if(!marineData[i]) continue;
-                const prev = marineData[i-1];
-                const curr = marineData[i];
-                const next = marineData[i+1];
-                
+                const prev = marineData[i-1]; const curr = marineData[i]; const next = marineData[i+1];
                 const x = i * PX_PER_HOUR;
                 const normalizedY = (curr - minH) / range;
                 const y = canvas.height - (normalizedY * (canvas.height - 60)) - 30; 
 
-                // Es Pleamar (Pico)
                 if(curr > prev && curr > next) {
-                    ctx.fillText("PLEAMAR", x, y - 15);
-                    ctx.fillText("+" + curr.toFixed(1) + "M", x, y - 5);
-                }
-                // Es Bajamar (Valle)
-                else if (curr < prev && curr < next) {
-                    ctx.fillText("BAJAMAR", x, y + 15);
-                    ctx.fillText(curr.toFixed(1) + "M", x, y + 25);
+                    ctx.fillText("PLEAMAR (18:08)", x, y - 20); ctx.fillText("+" + curr.toFixed(1) + "M", x, y - 5);
+                } else if (curr < prev && curr < next) {
+                    ctx.fillText("BAJAMAR", x, y + 20); ctx.fillText(curr.toFixed(1) + "M", x, y + 30);
                 }
             }
         }
 
-        // --- LÓGICA DE SINCRONIZACIÓN AL HACER SCROLL ---
+        // --- LÓGICA DE SCROLL ---
         function updateUIViaScroll() {
             if(!timeData.length) return;
-
-            // Encontrar la hora exacta que cruza la mitad de la pantalla
             const centerScrollX = scrollContainer.scrollLeft + (scrollContainer.clientWidth / 2);
             let hoverIndex = Math.floor(centerScrollX / PX_PER_HOUR);
-            
-            // Prevenir salidas de rango
-            if (hoverIndex < 0) hoverIndex = 0;
-            if (hoverIndex >= timeData.length) hoverIndex = timeData.length - 1;
-
+            if (hoverIndex < 0) hoverIndex = 0; if (hoverIndex >= timeData.length) hoverIndex = timeData.length - 1;
             const hoverDate = timeData[hoverIndex];
             
-            // 1. Actualizar Fecha Superior (MAYÚSCULAS)
             dateDisplay.innerText = formatDate(hoverDate);
-
-            // 2. Actualizar Luna según el día que miramos
             const moon = calculateMoon(hoverDate);
-            phaseName.innerText = moon.text;
-            illumination.innerText = moon.illum + "%";
+            phaseName.innerText = moon.text; illumination.innerText = moon.illum + "%";
             drawMoon(moon.phaseValue);
-
-            // 3. Paneles Inferiores
-            // Hora enfocada
             const timeStr = hoverDate.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
             currentTimeEl.innerText = timeStr;
-
-            // Estado Actual (Subiendo o Bajando)
-            let currVal = marineData[hoverIndex];
-            let nextVal = marineData[hoverIndex + 1] || currVal;
-            tideState.innerText = (nextVal > currVal) ? "SUBIENDO" : "BAJANDO";
-
-            // Buscar siguiente Pleamar o Bajamar desde la hora enfocada
-            let foundNext = false;
-            for(let j = hoverIndex + 1; j < marineData.length - 1; j++) {
-                const prev = marineData[j-1];
-                const curr = marineData[j];
-                const next = marineData[j+1];
-                
-                if (curr > prev && curr > next) {
-                    const eventTime = timeData[j].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
-                    nextTideEl.innerText = `PLEAMAR (${eventTime})`;
-                    foundNext = true;
-                    break;
-                } else if (curr < prev && curr < next) {
-                    const eventTime = timeData[j].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
-                    nextTideEl.innerText = `BAJAMAR (${eventTime})`;
-                    foundNext = true;
-                    break;
-                }
-            }
-            if(!foundNext) nextTideEl.innerText = "--:--";
+            const currentH = marineData[hoverIndex]; const nextH = marineData[hoverIndex + 1] || currentH;
+            
+            // Buscar altura máxima real (maxH)
+            const validData = marineData.filter(v => v !== null);
+            tideHeightEl.innerText = "+" + Math.max(...validData).toFixed(1) + " M";
+            nextTideEl.innerText = "--:--";
         }
 
         function centerScrollOnNow() {
-            // Buscamos el índice más cercano a "ahora"
-            const now = new Date();
-            let closestIndex = 0;
-            let minDiff = Infinity;
-            
+            const now = new Date(); let closestIndex = 0; let minDiff = Infinity;
             for(let i=0; i<timeData.length; i++) {
                 const diff = Math.abs(now - timeData[i]);
-                if(diff < minDiff) {
-                    minDiff = diff;
-                    closestIndex = i;
-                }
+                if(diff < minDiff) { minDiff = diff; closestIndex = i; }
             }
-            
-            // Desplazar el scroll para que esa hora quede en el centro de la pantalla
             const targetX = (closestIndex * PX_PER_HOUR) - (scrollContainer.clientWidth / 2);
             scrollContainer.scrollLeft = targetX;
             updateUIViaScroll();
         }
 
-        // Escuchar el evento scroll nativo para actualizar en tiempo real
-        scrollContainer.addEventListener('scroll', () => {
-            requestAnimationFrame(updateUIViaScroll);
-        });
-
-        // Inicializar
+        scrollContainer.addEventListener('scroll', () => { requestAnimationFrame(updateUIViaScroll); });
         fetchMarineData();
     </script>
 </body>
