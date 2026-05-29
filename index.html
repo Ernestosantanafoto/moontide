@@ -121,8 +121,12 @@
     </div>
 
     <script>
+        // === AQUÍ VA TU API KEY DE WORLDTIDES ===
+        const API_KEY = "9946d5c9-2c16-435f-a7d5-72fff5c9b906"; 
+
         let marineData = [];
         let timeData = [];
+        let extremesData = [];
         const today = new Date();
         
         const dateDisplay = document.getElementById('date-display');
@@ -164,7 +168,6 @@
 
         function drawMoon(phaseValue) {
             let offset;
-            
             if (phaseValue <= 0.5) {
                 offset = -(phaseValue * 200); 
                 moonShadow.style.background = 'linear-gradient(to right, rgba(1, 4, 10, 0.98) 50%, rgba(1, 4, 10, 0.8) 80%, rgba(1, 4, 10, 0) 100%)';
@@ -172,65 +175,67 @@
                 offset = 100 - ((phaseValue - 0.5) * 200);
                 moonShadow.style.background = 'linear-gradient(to left, rgba(1, 4, 10, 0.98) 50%, rgba(1, 4, 10, 0.8) 80%, rgba(1, 4, 10, 0) 100%)';
             }
-            
             moonShadow.style.transform = `translateX(${offset}%)`;
         }
 
-        // FETCH CON PROMESAS CLÁSICAS (Sin async/await para máxima compatibilidad)
+        // MOTOR REEMPLAZADO: WORLDTIDES API
         function fetchMarineData() {
-            const lat = 28.12; const lon = -15.43;
-            const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=sea_level_height_msl&timezone=auto&past_days=1`;
+            if (API_KEY === "PON_AQUI_TU_API_KEY") {
+                dateDisplay.innerText = "FALTA API KEY";
+                return;
+            }
+
+            const lat = 28.14; // Coordenadas de Las Canteras
+            const lon = -15.43;
+            // Pedimos 3 días de datos (alturas y picos extremos)
+            const url = `https://www.worldtides.info/api/v3?heights&extremes&days=3&lat=${lat}&lon=${lon}&key=${API_KEY}`;
             
             fetch(url)
                 .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    }
+                    if (response.ok) return response.json();
                     throw new Error("Error de conexión");
                 })
                 .then(data => {
-                    marineData = data.hourly.sea_level_height_msl;
-                    timeData = data.hourly.time.map(t => new Date(t));
+                    // Extraemos alturas (vienen cada 30 min)
+                    marineData = data.heights.map(h => h.height);
+                    timeData = data.heights.map(h => new Date(h.dt * 1000));
+                    // Extraemos la información exacta de las horas de los picos
+                    extremesData = data.extremes;
                     renderCanvas();
                     centerScrollOnNow();
                 })
                 .catch(error => {
-                    console.error("Error conectando a la API de mareas", error);
+                    console.error("Error conectando a WorldTides", error);
                 });
         }
 
-        const PX_PER_HOUR = 30;
+        const PX_PER_STEP = 20; // Píxeles por cada tramo de 30 minutos
 
         function renderCanvas() {
             if(!marineData.length) return;
 
-            canvas.width = marineData.length * PX_PER_HOUR;
+            canvas.width = marineData.length * PX_PER_STEP;
             canvas.height = 140; 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const validData = marineData.filter(v => v !== null);
-            const minH = Math.min(...validData); 
-            const maxH = Math.max(...validData);
+            const minH = Math.min(...marineData); 
+            const maxH = Math.max(...marineData);
             const range = (maxH - minH) || 1;
 
             ctx.beginPath();
             ctx.moveTo(0, canvas.height);
             
             for(let i=0; i<marineData.length - 1; i++) {
-                if(marineData[i] === null) continue;
-                
-                const x0 = i * PX_PER_HOUR;
+                const x0 = i * PX_PER_STEP;
                 const normalizedY0 = (marineData[i] - minH) / range;
                 const y0 = canvas.height - (normalizedY0 * (canvas.height - 60)) - 30; 
 
-                const x1 = (i + 1) * PX_PER_HOUR;
+                const x1 = (i + 1) * PX_PER_STEP;
                 const normalizedY1 = (marineData[i + 1] - minH) / range;
                 const y1 = canvas.height - (normalizedY1 * (canvas.height - 60)) - 30; 
                 
-                const cp1x = x0 + (x1 - x0) / 2;
-                const cp1y = y0;
-                const cp2x = x0 + (x1 - x0) / 2;
-                const cp2y = y1;
+                const cp1x = x0 + (x1 - x0) / 2; const cp1y = y0;
+                const cp2x = x0 + (x1 - x0) / 2; const cp2y = y1;
                 
                 if(i===0) ctx.moveTo(x0, y0);
                 ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x1, y1);
@@ -247,11 +252,10 @@
 
             ctx.beginPath();
             for(let i=0; i<marineData.length - 1; i++) {
-                if(marineData[i] === null) continue;
-                const x0 = i * PX_PER_HOUR;
+                const x0 = i * PX_PER_STEP;
                 const normalizedY0 = (marineData[i] - minH) / range;
                 const y0 = canvas.height - (normalizedY0 * (canvas.height - 60)) - 30; 
-                const x1 = (i + 1) * PX_PER_HOUR;
+                const x1 = (i + 1) * PX_PER_STEP;
                 const normalizedY1 = (marineData[i + 1] - minH) / range;
                 const y1 = canvas.height - (normalizedY1 * (canvas.height - 60)) - 30; 
                 const cp1x = x0 + (x1 - x0) / 2; const cp1y = y0;
@@ -268,28 +272,34 @@
             ctx.fillStyle = "white"; ctx.font = "10px -apple-system, sans-serif"; ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            for(let i=1; i<marineData.length - 1; i++) {
-                if(!marineData[i]) continue;
-                const prev = marineData[i-1]; const curr = marineData[i]; const next = marineData[i+1];
-                const x = i * PX_PER_HOUR;
-                const normalizedY = (curr - minH) / range;
+            // Imprimir extremos exactos provenientes de la API
+            const startTime = timeData[0].getTime();
+            const stepMs = timeData[1].getTime() - startTime;
+
+            extremesData.forEach(ext => {
+                const extTime = ext.dt * 1000;
+                const index = (extTime - startTime) / stepMs;
+                const x = index * PX_PER_STEP;
+                
+                const normalizedY = (ext.height - minH) / range;
                 const y = canvas.height - (normalizedY * (canvas.height - 60)) - 30; 
 
-                if(curr > prev && curr > next) {
-                    const timeStr = timeData[i].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
-                    ctx.fillText(`PLEAMAR (${timeStr})`, x, y - 20); ctx.fillText("+" + curr.toFixed(1) + "M", x, y - 5);
+                const timeStr = new Date(extTime).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+                
+                if (ext.type === "High") {
+                    ctx.fillText(`PLEAMAR (${timeStr})`, x, y - 20); 
+                    ctx.fillText("+" + ext.height.toFixed(1) + "M", x, y - 5);
+                } else {
+                    ctx.fillText(`BAJAMAR (${timeStr})`, x, y + 20); 
+                    ctx.fillText("+" + ext.height.toFixed(1) + "M", x, y + 30);
                 }
-                else if (curr < prev && curr < next) {
-                    const timeStr = timeData[i].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
-                    ctx.fillText(`BAJAMAR (${timeStr})`, x, y + 20); ctx.fillText(curr.toFixed(1) + "M", x, y + 30);
-                }
-            }
+            });
         }
 
         function updateUIViaScroll() {
             if(!timeData.length) return;
             const centerScrollX = scrollContainer.scrollLeft + (scrollContainer.clientWidth / 2);
-            let hoverIndex = Math.floor(centerScrollX / PX_PER_HOUR);
+            let hoverIndex = Math.floor(centerScrollX / PX_PER_STEP);
             if (hoverIndex < 0) hoverIndex = 0; if (hoverIndex >= timeData.length) hoverIndex = timeData.length - 1;
             const hoverDate = timeData[hoverIndex];
             
@@ -300,18 +310,17 @@
             
             const timeStr = hoverDate.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
             currentTimeEl.innerText = timeStr;
-            const validData = marineData.filter(v => v !== null);
-            tideHeightEl.innerText = "+" + Math.max(...validData).toFixed(1) + " M";
+            tideHeightEl.innerText = "+" + Math.max(...marineData).toFixed(1) + " M";
             
             let foundNext = false;
-            for(let j = hoverIndex + 1; j < marineData.length - 1; j++) {
-                const prev = marineData[j-1]; const curr = marineData[j]; const next = marineData[j+1];
-                if (curr > prev && curr > next) {
-                    nextTideEl.innerText = `PLEAMAR (${timeData[j].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase()})`;
-                    foundNext = true; break;
-                } else if (curr < prev && curr < next) {
-                    nextTideEl.innerText = `BAJAMAR (${timeData[j].toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase()})`;
-                    foundNext = true; break;
+            for (let j = 0; j < extremesData.length; j++) {
+                if (extremesData[j].dt * 1000 > hoverDate.getTime()) {
+                    const ext = extremesData[j];
+                    const extTimeStr = new Date(ext.dt * 1000).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
+                    const typeName = ext.type === "High" ? "PLEAMAR" : "BAJAMAR";
+                    nextTideEl.innerText = `${typeName} (${extTimeStr})`;
+                    foundNext = true;
+                    break;
                 }
             }
             if(!foundNext) nextTideEl.innerText = "--:--";
@@ -323,7 +332,7 @@
                 const diff = Math.abs(now - timeData[i]);
                 if(diff < minDiff) { minDiff = diff; closestIndex = i; }
             }
-            const targetX = (closestIndex * PX_PER_HOUR) - (scrollContainer.clientWidth / 2);
+            const targetX = (closestIndex * PX_PER_STEP) - (scrollContainer.clientWidth / 2);
             scrollContainer.scrollLeft = targetX;
             updateUIViaScroll();
         }
