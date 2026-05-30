@@ -22,24 +22,27 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background-image: radial-gradient(circle at 50% 100%, #0d2240 0%, #01040a 70%);
-        }
-
-        header, .moon-section {
+            /* Fondo estrellado en toda la app */
             background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e0/Night_Sky_with_Clouds.jpg');
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
         }
 
-        header { text-align: center; padding: 20px 10px 10px; z-index: 10; background-color: rgba(1, 4, 10, 0.3); position: relative; }
-        h1 { font-size: 14px; font-weight: 600; letter-spacing: 1px; color: var(--text-main); text-transform: uppercase; }
-        #date-display { font-size: 12px; font-weight: 400; color: var(--text-muted); margin-top: 5px; letter-spacing: 0.5px; text-transform: uppercase; }
+        /* Degradado para oscurecer la parte inferior y simular el mar */
+        .ocean-overlay {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to bottom, rgba(1, 4, 10, 0) 0%, rgba(1, 4, 10, 0.9) 30%, rgba(4, 15, 35, 1) 100%);
+            z-index: 0; pointer-events: none;
+        }
 
-        /* Botón de retorno al presente */
+        header { text-align: center; padding: 25px 10px 10px; z-index: 10; position: relative; }
+        h1 { font-size: 14px; font-weight: 600; letter-spacing: 1.5px; color: var(--text-main); text-transform: uppercase; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        #date-display { font-size: 12px; font-weight: 400; color: var(--text-muted); margin-top: 5px; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+
         #btn-now {
             position: absolute;
-            top: 20px;
+            top: 25px;
             right: 15px;
             background: rgba(0, 229, 255, 0.1);
             border: 1px solid var(--neon-blue);
@@ -57,17 +60,17 @@
         #btn-now:active { background: rgba(0, 229, 255, 0.3); transform: scale(0.95); }
 
         .moon-section {
-            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 20px;
-            background-color: rgba(1, 4, 10, 0.2); 
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 20px; z-index: 10;
         }
         
         .moon-visual {
-            width: 180px; height: 180px; border-radius: 50%;
+            /* Luna más grande */
+            width: 240px; height: 240px; border-radius: 50%;
             background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg');
             background-size: cover; background-position: center;
-            /* Se ha eliminado el inset (sombra interior negra) que generaba el 'pegote' */
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
-            position: relative; margin-bottom: 20px; overflow: hidden;
+            /* Resplandor sutil sin borde negro */
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
+            position: relative; margin-bottom: 25px; overflow: hidden;
         }
 
         .moon-shadow {
@@ -76,14 +79,12 @@
             transition: transform 0.1s linear, background 0.1s linear;
         }
 
-        .phase-title { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase; }
-        .phase-name { font-size: 20px; font-weight: 600; margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
-        .illumination { font-size: 16px; font-weight: 300; }
+        .phase-title { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+        .phase-name { font-size: 22px; font-weight: 600; margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+        .illumination { font-size: 16px; font-weight: 300; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
 
         .tide-section {
-            flex: 1; background: rgba(0, 40, 80, 0.2); border-top-left-radius: 30px; border-top-right-radius: 30px;
-            backdrop-filter: blur(10px); padding: 15px 0 20px 0; position: relative; display: flex; flex-direction: column;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            height: 300px; background: transparent; position: relative; display: flex; flex-direction: column; z-index: 10;
         }
 
         .scroll-container {
@@ -97,19 +98,24 @@
 
         .center-marker {
             position: absolute; top: 0; left: 50%; width: 2px; height: 180px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.1), var(--neon-blue) 70%, transparent);
+            background: linear-gradient(to bottom, transparent, var(--neon-blue) 70%, transparent);
             pointer-events: none; z-index: 10; transform: translateX(-50%);
         }
 
-        .info-panels { display: flex; justify-content: space-between; gap: 10px; padding: 0 20px; margin-top: 10px; }
-        .panel { flex: 1; background: var(--card-bg); border-radius: 15px; padding: 12px 5px; text-align: center; }
+        .info-panels { display: flex; justify-content: space-between; gap: 10px; padding: 0 20px; margin-top: 15px; }
+        .panel { 
+            flex: 1; background: rgba(10, 20, 40, 0.6); border-radius: 15px; padding: 15px 5px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(5px);
+        }
         .panel-label { font-size: 9px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
-        .panel-value { font-size: 14px; font-weight: 600; text-transform: uppercase; }
+        .panel-value { font-size: 15px; font-weight: 600; text-transform: uppercase; }
         
-        .swipe-hint { text-align: center; font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: -5px; letter-spacing: 2px;}
+        .swipe-hint { text-align: center; font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: 5px; letter-spacing: 2px; text-transform: uppercase;}
     </style>
 </head>
 <body>
+
+    <div class="ocean-overlay"></div>
 
     <header>
         <h1>LAS PALMAS DE GRAN CANARIA</h1>
@@ -165,11 +171,11 @@
         }
 
         function formatDateShort(dateObj) {
-            return dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }).toUpperCase();
+            return dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }).toUpperCase();
         }
 
         function calculateMoon(date) {
-            const LUNAR_MONTH_MS = 2551442877; 
+            const LUNAR_MONTH_MS = 2551442877; // 29.53 días
             const newMoon = new Date("2000-01-06T18:14:00.000Z").getTime();
             let phase = ((date.getTime() - newMoon) % LUNAR_MONTH_MS) / LUNAR_MONTH_MS;
             if (phase < 0) phase += 1;
@@ -191,18 +197,24 @@
 
         function drawMoon(phaseValue) {
             let offset;
+            // Usamos colores muy oscuros que coincidan con tu fondo estelar para ocultar el "halo"
+            const darkSkyColor = 'rgba(1, 4, 10, 0.95)';
+            const fadeSkyColor = 'rgba(1, 4, 10, 0.6)';
+            
             if (phaseValue <= 0.5) {
+                // Creciente
                 offset = -(phaseValue * 200); 
-                moonShadow.style.background = 'linear-gradient(to right, rgba(1, 4, 10, 0.98) 48%, rgba(1, 4, 10, 0.85) 52%, rgba(1, 4, 10, 0) 58%)';
+                moonShadow.style.background = `linear-gradient(to right, ${darkSkyColor} 45%, ${fadeSkyColor} 55%, transparent 65%)`;
             } else {
+                // Menguante
                 offset = 100 - ((phaseValue - 0.5) * 200);
-                moonShadow.style.background = 'linear-gradient(to left, rgba(1, 4, 10, 0.98) 48%, rgba(1, 4, 10, 0.85) 52%, rgba(1, 4, 10, 0) 58%)';
+                moonShadow.style.background = `linear-gradient(to left, ${darkSkyColor} 45%, ${fadeSkyColor} 55%, transparent 65%)`;
             }
             moonShadow.style.transform = `translateX(${offset}%)`;
         }
 
         function fetchMarineData() {
-            // AHORA PEDIMOS 7 DÍAS EN LUGAR DE 3 para que el cambio de fase lunar sea totalmente evidente al deslizar
+            // Solicitamos 7 días para poder visualizar un avance real en el ciclo lunar (aprox 25% del ciclo)
             const url = `https://www.worldtides.info/api/v3?heights&extremes&days=7&lat=28.14&lon=-15.43&key=${API_KEY}`;
             
             fetch(url)
@@ -217,10 +229,10 @@
                 .catch(e => console.error("Error API:", e));
         }
 
-        const PX_PER_STEP = 25; 
+        const PX_PER_STEP = 30; // 30px cada 30 min = onda ancha y suave
 
         function getCanvasY(height, minH, range) {
-            return canvas.height - (((height - minH) / range) * 80) - 60;
+            return canvas.height - (((height - minH) / range) * 80) - 50;
         }
 
         function renderCanvas() {
@@ -233,40 +245,34 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // --- LÓGICA DE SEPARACIÓN VISUAL DE DÍAS (Zonas alternas) ---
-            let currentDayIndex = 0;
-            let lastDayX = 0;
-            
-            for(let i=0; i<timeData.length; i++) {
-                // Detectar medianoche (cambio de día)
-                if(i > 0 && timeData[i].getDate() !== timeData[i-1].getDate()) {
-                    const x = i * PX_PER_STEP;
+            // --- SEPARACIÓN DÍA POR DÍA ---
+            let currentDay = timeData[0].getDate();
+            let shade = false;
+            let lastX = 0;
+
+            for (let i = 0; i < timeData.length; i++) {
+                if (timeData[i].getDate() !== currentDay || i === timeData.length - 1) {
+                    let x = i * PX_PER_STEP;
                     
-                    // Pintar fondo sutil alterno
-                    if(currentDayIndex % 2 === 1) {
-                        ctx.fillStyle = "rgba(255, 255, 255, 0.03)"; // Tono sutil
-                        ctx.fillRect(lastDayX, 0, x - lastDayX, canvas.height);
+                    if (shade) {
+                        ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+                        ctx.fillRect(lastX, 0, x - lastX, canvas.height);
                     }
                     
-                    // Línea vertical separadora fina
                     ctx.beginPath();
-                    ctx.moveTo(x, 0);
+                    ctx.moveTo(x, 0); 
                     ctx.lineTo(x, canvas.height);
                     ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
                     ctx.lineWidth = 1;
                     ctx.stroke();
 
-                    currentDayIndex++;
-                    lastDayX = x;
+                    currentDay = timeData[i].getDate();
+                    shade = !shade;
+                    lastX = x;
                 }
             }
-            // Rellenar el último tramo si le toca
-            if(currentDayIndex % 2 === 1) {
-                ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-                ctx.fillRect(lastDayX, 0, canvas.width - lastDayX, canvas.height);
-            }
 
-            // --- ONDA DE MAREA SUAVE ---
+            // --- ONDA DE MAREA PERFECTA (Bézier cúbico) ---
             ctx.beginPath();
             ctx.moveTo(0, canvas.height); 
             ctx.lineTo(0, getCanvasY(marineData[0], minH, range));
@@ -276,12 +282,13 @@
                 const y0 = getCanvasY(marineData[i], minH, range);
                 const x1 = (i + 1) * PX_PER_STEP; 
                 const y1 = getCanvasY(marineData[i+1], minH, range);
+                
+                // Puntos de control para la curva Bézier cúbica suave
                 const xc = (x0 + x1) / 2;
-                const yc = (y0 + y1) / 2;
-                ctx.quadraticCurveTo(x0, y0, xc, yc);
+                ctx.bezierCurveTo(xc, y0, xc, y1, x1, y1);
             }
-            ctx.lineTo((marineData.length - 1) * PX_PER_STEP, getCanvasY(marineData[marineData.length - 1], minH, range));
-            ctx.lineTo(canvas.width, canvas.height); 
+            
+            ctx.lineTo((marineData.length - 1) * PX_PER_STEP, canvas.height); 
             ctx.closePath();
             
             let gradient = ctx.createLinearGradient(0, 0, 0, 180);
@@ -290,7 +297,7 @@
             ctx.fillStyle = gradient; 
             ctx.fill();
 
-            // Dibujar la línea brillante de la onda
+            // Dibujar la línea de neón
             ctx.beginPath();
             ctx.moveTo(0, getCanvasY(marineData[0], minH, range));
             for(let i = 0; i < marineData.length - 1; i++) {
@@ -299,34 +306,30 @@
                 const x1 = (i + 1) * PX_PER_STEP; 
                 const y1 = getCanvasY(marineData[i+1], minH, range);
                 const xc = (x0 + x1) / 2;
-                const yc = (y0 + y1) / 2;
-                ctx.quadraticCurveTo(x0, y0, xc, yc);
+                ctx.bezierCurveTo(xc, y0, xc, y1, x1, y1);
             }
-            ctx.lineTo((marineData.length - 1) * PX_PER_STEP, getCanvasY(marineData[marineData.length - 1], minH, range));
             ctx.strokeStyle = "#00d2ff"; 
             ctx.lineWidth = 3; 
             ctx.shadowColor = "#00d2ff";
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 12;
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            // --- LÍNEA DE TIEMPO (Bajo el mar) ---
+            // --- LÍNEA DE TIEMPO INFERIOR ---
             ctx.textAlign = "center";
             for (let i = 0; i < timeData.length; i++) {
                 const date = timeData[i];
                 const x = i * PX_PER_STEP;
 
-                // Marcas cada 6 horas
                 if (date.getMinutes() === 0 && date.getHours() % 6 === 0) {
-                    ctx.fillStyle = "rgba(255,255,255,0.5)";
+                    ctx.fillStyle = "rgba(255,255,255,0.4)";
                     ctx.font = "9px -apple-system, sans-serif";
                     ctx.fillText(date.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase(), x, canvas.height - 10);
                     ctx.fillRect(x - 0.5, canvas.height - 25, 1, 4);
                 }
 
-                // Días (A las 12:00 del mediodía para centrar el texto)
                 if (date.getHours() === 12 && date.getMinutes() === 0) {
-                    ctx.fillStyle = "rgba(255,255,255,0.9)";
+                    ctx.fillStyle = "rgba(255,255,255,0.8)";
                     ctx.font = "bold 11px -apple-system, sans-serif";
                     ctx.fillText(formatDateShort(date), x, canvas.height - 35);
                 }
@@ -344,7 +347,7 @@
             
             dateDisplay.innerText = formatDate(hoverDate);
             
-            // LA LUNA SE ACTUALIZA AQUÍ EN TIEMPO REAL SEGÚN EL SCROLL
+            // LA LUNA SE ACTUALIZA AQUÍ CALCULANDO EL PORCENTAJE DE SU CICLO PARA CADA DÍA
             const moon = calculateMoon(hoverDate);
             phaseName.innerText = moon.text; 
             illumination.innerText = moon.illum + "%";
