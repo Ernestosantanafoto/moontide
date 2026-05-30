@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Lumina — Luna y Marea</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
@@ -20,17 +21,26 @@ body {
 #bg::after {
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(to bottom,
-    rgba(1,8,16,0) 0%, rgba(1,8,16,0) 40%,
-    rgba(1,8,16,0.65) 60%, rgba(1,8,16,0.95) 74%, rgba(1,8,16,1) 84%);
+    rgba(1,8,16,0) 0%, rgba(1,8,16,0) 38%,
+    rgba(1,8,16,0.6) 56%, rgba(1,8,16,0.94) 70%, rgba(1,8,16,1) 80%);
 }
+
+/* LUNA — bajada con top: 4vh */
 #moon-wrap {
-  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: min(72vw, 300px); aspect-ratio: 1; z-index: 5; pointer-events: none;
+  position: absolute;
+  top: 4vh; left: 50%;
+  transform: translateX(-50%);
+  width: min(72vw, 290px);
+  aspect-ratio: 1;
+  z-index: 5; pointer-events: none;
 }
 #moon-canvas { width: 100%; height: 100%; border-radius: 50%; display: block; }
+
+/* HEADER */
 header {
   position: relative; z-index: 20;
-  padding: 14px 14px 0; display: flex; justify-content: flex-end; flex-shrink: 0;
+  padding: 14px 14px 0;
+  display: flex; justify-content: flex-end; flex-shrink: 0;
 }
 #btn-now {
   background: rgba(0,210,255,0.08); border: 1px solid #00d2ff; color: #00d2ff;
@@ -38,16 +48,37 @@ header {
   letter-spacing: 1.5px; cursor: pointer; text-transform: uppercase;
 }
 #btn-now:active { background: rgba(0,210,255,0.25); }
-.spacer { flex: 1; min-height: 0; position: relative; z-index: 1; }
-.moon-info { position: relative; z-index: 20; text-align: center; padding: 0 16px 4px; flex-shrink: 0; }
-.phase-label { font-size: 8px; letter-spacing: 2px; color: rgba(255,255,255,0.38); text-transform: uppercase; margin-bottom: 2px; }
-.phase-name  { font-size: 19px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 20px rgba(0,210,255,0.35); margin-bottom: 1px; }
-.illum       { font-size: 12px; font-weight: 300; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
-.location-block { position: relative; z-index: 20; text-align: center; padding: 0 0 6px; flex-shrink: 0; }
+
+/* SPACER: empuja el contenido justo debajo de la luna */
+.spacer {
+  flex: 0 0 auto;
+  height: calc(min(72vw, 290px) + 4vh - 48px);
+}
+
+/* INFO LUNAR */
+.moon-info {
+  position: relative; z-index: 20; text-align: center;
+  padding: 0 16px 3px; flex-shrink: 0;
+}
+.phase-label { font-size: 8px; letter-spacing: 2px; color: rgba(255,255,255,0.38); text-transform: uppercase; margin-bottom: 1px; }
+.phase-name  { font-size: 18px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 18px rgba(0,210,255,0.35); margin-bottom: 1px; }
+.illum       { font-size: 12px; font-weight: 300; color: rgba(255,255,255,0.5); }
+
+/* CIUDAD, FECHA, SALIDA/PUESTA LUNA */
+.location-block {
+  position: relative; z-index: 20; text-align: center; padding: 4px 0 5px; flex-shrink: 0;
+}
 .city  { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
 .fecha { font-size: 10px; color: #00d2ff; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+.moon-times {
+  font-size: 10px; color: rgba(255,255,255,0.42); letter-spacing: 1px;
+  text-transform: uppercase; margin-top: 3px;
+}
+.moon-times span { color: rgba(255,255,255,0.65); }
+
+/* MAREA */
 .tide-wrap { position: relative; z-index: 20; flex-shrink: 0; }
-.scroll-hint { text-align: center; font-size: 8px; color: rgba(255,255,255,0.22); letter-spacing: 2px; text-transform: uppercase; padding: 4px 0 3px; }
+.scroll-hint { text-align: center; font-size: 8px; color: rgba(255,255,255,0.2); letter-spacing: 2px; text-transform: uppercase; padding: 3px 0 2px; }
 .scroll-outer { position: relative; }
 .center-line {
   position: absolute; top: 0; left: 50%; width: 1.5px; height: 100%;
@@ -56,33 +87,45 @@ header {
 }
 .scroll-container {
   overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; height: 165px;
+  scrollbar-width: none; height: 160px;
 }
 .scroll-container::-webkit-scrollbar { display: none; }
-canvas.tide { height: 165px; display: block; }
-.panels { display: flex; gap: 8px; padding: 8px 12px 14px; position: relative; z-index: 20; flex-shrink: 0; }
+canvas.tide { height: 160px; display: block; }
+
+/* PANELES */
+.panels {
+  display: flex; gap: 8px; padding: 7px 12px 12px;
+  position: relative; z-index: 20; flex-shrink: 0;
+}
 .panel {
   flex: 1; background: rgba(0,12,35,0.6); border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px; padding: 10px 5px; text-align: center; backdrop-filter: blur(10px);
+  border-radius: 14px; padding: 9px 5px; text-align: center; backdrop-filter: blur(10px);
 }
-.panel-label { font-size: 7.5px; color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.panel-label { font-size: 7.5px; color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
 .panel-value { font-size: 12px; font-weight: 600; text-transform: uppercase; line-height: 1.2; }
 </style>
 </head>
 <body>
 <div id="bg"></div>
 <div id="moon-wrap"><canvas id="moon-canvas"></canvas></div>
+
 <header><button id="btn-now">VOLVER AHORA</button></header>
 <div class="spacer"></div>
+
 <div class="moon-info">
   <div class="phase-label">Fase lunar</div>
   <div class="phase-name" id="phase-name">...</div>
   <div class="illum" id="illum">--%</div>
 </div>
+
 <div class="location-block">
   <div class="city">Las Palmas de Gran Canaria</div>
   <div class="fecha" id="fecha">CARGANDO...</div>
+  <div class="moon-times" id="moon-times">
+    ↑ <span id="moonrise-time">--:--</span> &nbsp;·&nbsp; ↓ <span id="moonset-time">--:--</span>
+  </div>
 </div>
+
 <div class="tide-wrap">
   <div class="scroll-hint">← desliza la gráfica →</div>
   <div class="scroll-outer">
@@ -92,6 +135,7 @@ canvas.tide { height: 165px; display: block; }
     </div>
   </div>
 </div>
+
 <div class="panels">
   <div class="panel"><div class="panel-label">Hora selecc.</div><div class="panel-value" id="p-hora">--:--</div></div>
   <div class="panel"><div class="panel-label">Próxima marea</div><div class="panel-value" id="p-marea">--:--</div></div>
@@ -100,12 +144,12 @@ canvas.tide { height: 165px; display: block; }
 
 <script>
 const API_KEY = "9946d5c9-2c16-435f-a7d5-72fff5c9b906";
+const LAT = 28.14, LON = -15.43;
 let marineData=[], timeData=[], extremesData=[];
 const PX = 28;
-
-// Crop values medidos de LUNA.png (411x424): luna en rows 1-410, cols 0-409
 const MOON_SRC_X=0, MOON_SRC_Y=1, MOON_SRC_W=409, MOON_SRC_H=409;
 
+// ── DEMO DATA ─────────────────────────────────────────────────────
 function generateDemoData() {
   const now=new Date(); now.setMinutes(0,0,0);
   const heights=[],times=[],extremes=[];
@@ -172,27 +216,17 @@ function drawMoon(phase){
   const ctx=cv.getContext('2d'),r=size/2;
   ctx.clearRect(0,0,size,size);
 
-  // 1. Luna — recortamos exactamente el círculo lunar de la imagen fuente
-  //    evitando las franjas negras del PNG (13px abajo, 1px arriba)
   ctx.save();
-  ctx.beginPath(); ctx.arc(r,r,r,0,Math.PI*2); ctx.clip();
-  ctx.drawImage(lunaImg,
-    MOON_SRC_X, MOON_SRC_Y, MOON_SRC_W, MOON_SRC_H,  // source: crop preciso
-    0, 0, size, size                                    // dest: llena el canvas
-  );
+  ctx.beginPath();ctx.arc(r,r,r,0,Math.PI*2);ctx.clip();
+  ctx.drawImage(lunaImg,MOON_SRC_X,MOON_SRC_Y,MOON_SRC_W,MOON_SRC_H,0,0,size,size);
   ctx.restore();
 
-  // 2. Vignette borde
   ctx.save();
   const vig=ctx.createRadialGradient(r,r,r*0.80,r,r,r);
-  vig.addColorStop(0,'rgba(3,13,26,0)');
-  vig.addColorStop(0.90,'rgba(3,13,26,0)');
-  vig.addColorStop(0.97,'rgba(3,13,26,0.75)');
-  vig.addColorStop(1.0,'rgba(3,13,26,1)');
-  ctx.beginPath(); ctx.arc(r,r,r,0,Math.PI*2);
-  ctx.fillStyle=vig; ctx.fill(); ctx.restore();
+  vig.addColorStop(0,'rgba(3,13,26,0)');vig.addColorStop(0.90,'rgba(3,13,26,0)');
+  vig.addColorStop(0.97,'rgba(3,13,26,0.75)');vig.addColorStop(1.0,'rgba(3,13,26,1)');
+  ctx.beginPath();ctx.arc(r,r,r,0,Math.PI*2);ctx.fillStyle=vig;ctx.fill();ctx.restore();
 
-  // 3. termX y lado
   let termX,darkOnRight;
   if(phase<=0.5){termX=r*(1-(phase/0.5)*2);darkOnRight=false;}
   else{termX=r*(1-((phase-0.5)/0.5)*2);darkOnRight=true;}
@@ -216,11 +250,21 @@ function drawMoon(phase){
   renderLayer(BLUR_MID,0.60,BLUR_MID*0.3);
   renderLayer(BLUR_HARD,0.95,BLUR_MID*0.8);
 
-  // 4. Clip circular final
-  ctx.save();
-  ctx.globalCompositeOperation='destination-in';
-  ctx.beginPath();ctx.arc(r,r,r,0,Math.PI*2);
-  ctx.fillStyle='#000';ctx.fill();ctx.restore();
+  ctx.save();ctx.globalCompositeOperation='destination-in';
+  ctx.beginPath();ctx.arc(r,r,r,0,Math.PI*2);ctx.fillStyle='#000';ctx.fill();ctx.restore();
+}
+
+// ── SALIDA/PUESTA DE LUNA ─────────────────────────────────────────
+function updateMoonTimes(date) {
+  if(typeof SunCalc === 'undefined') return;
+  // Usamos el mediodía del día seleccionado como referencia
+  const dayRef = new Date(date);
+  dayRef.setHours(12,0,0,0);
+  const mt = SunCalc.getMoonTimes(dayRef, LAT, LON);
+  const rise = mt.rise ? fmtTime(mt.rise) : '--:--';
+  const set  = mt.set  ? fmtTime(mt.set)  : '--:--';
+  document.getElementById('moonrise-time').innerText = rise;
+  document.getElementById('moonset-time').innerText  = set;
 }
 
 // ── UTILIDADES ────────────────────────────────────────────────────
@@ -229,12 +273,13 @@ function fmtShort(d){return d.toLocaleDateString('es-ES',{weekday:'long',day:'nu
 function fmtTime(d){return d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}).toUpperCase();}
 
 // ── MAREA ─────────────────────────────────────────────────────────
-function cY(h,minH,range,H){return H-(((h-minH)/range)*100)-28;}
+// cY ajustado: onda más alta, usa más del canvas vertical
+function cY(h,minH,range,H){return H-(((h-minH)/range)*125)-14;}
 
 function renderTide(){
   const cv=document.getElementById('tide-canvas');
   const ctx=cv.getContext('2d');
-  cv.width=marineData.length*PX;const H=165;cv.height=H;
+  cv.width=marineData.length*PX;const H=160;cv.height=H;
   const minH=Math.min(...marineData),maxH=Math.max(...marineData);
   const range=(maxH-minH)||1;
   ctx.clearRect(0,0,cv.width,H);
@@ -257,8 +302,9 @@ function renderTide(){
   }
   ctx.lineTo((marineData.length-1)*PX,H);ctx.closePath();
   const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,"rgba(0,195,255,0.38)");g.addColorStop(0.5,"rgba(0,90,170,0.2)");g.addColorStop(1,"rgba(0,20,60,0.03)");
+  g.addColorStop(0,"rgba(0,195,255,0.4)");g.addColorStop(0.45,"rgba(0,90,170,0.22)");g.addColorStop(1,"rgba(0,20,60,0.03)");
   ctx.fillStyle=g;ctx.fill();
+
   ctx.beginPath();ctx.moveTo(0,cY(marineData[0],minH,range,H));
   for(let i=0;i<marineData.length-1;i++){
     const x0=i*PX,y0=cY(marineData[i],minH,range,H);
@@ -266,15 +312,16 @@ function renderTide(){
     ctx.bezierCurveTo((x0+x1)/2,y0,(x0+x1)/2,y1,x1,y1);
   }
   ctx.strokeStyle="#00d2ff";ctx.lineWidth=2.5;ctx.shadowColor="#00d2ff";ctx.shadowBlur=12;ctx.stroke();ctx.shadowBlur=0;
+
   ctx.textAlign="center";
   for(let i=0;i<timeData.length;i++){
     const d=timeData[i],x=i*PX;
     if(d.getMinutes()===0&&d.getHours()%6===0){
       ctx.fillStyle="rgba(255,255,255,0.28)";ctx.font="8px -apple-system,sans-serif";
-      ctx.fillText(fmtTime(d),x,H-8);ctx.fillStyle="rgba(255,255,255,0.22)";ctx.fillRect(x-0.5,H-18,1,4);
+      ctx.fillText(fmtTime(d),x,H-4);ctx.fillStyle="rgba(255,255,255,0.2)";ctx.fillRect(x-0.5,H-14,1,3);
     }
     if(d.getHours()===12&&d.getMinutes()===0){
-      ctx.fillStyle="rgba(255,255,255,0.6)";ctx.font="bold 10px -apple-system,sans-serif";ctx.fillText(fmtShort(d),x,H-30);
+      ctx.fillStyle="rgba(255,255,255,0.6)";ctx.font="bold 10px -apple-system,sans-serif";ctx.fillText(fmtShort(d),x,H-25);
     }
   }
 }
@@ -290,6 +337,7 @@ function updateUI(){
   document.getElementById('phase-name').innerText=m.txt.toUpperCase();
   document.getElementById('illum').innerText=m.illum+"%";
   drawMoon(m.p);
+  updateMoonTimes(d);
   document.getElementById('p-hora').innerText=fmtTime(d);
   document.getElementById('p-alt').innerText="+"+Math.max(...marineData).toFixed(1)+" M";
   const next=extremesData.find(e=>e.dt*1000>d.getTime());
@@ -321,9 +369,10 @@ lunaImg.onload=()=>{
   document.getElementById('illum').innerText=m.illum+"%";
   document.getElementById('fecha').innerText=fmt(new Date());
   drawMoon(m.p);
+  updateMoonTimes(new Date());
 };
 
-fetch(`https://www.worldtides.info/api/v3?heights&extremes&days=7&lat=28.14&lon=-15.43&key=${API_KEY}`)
+fetch(`https://www.worldtides.info/api/v3?heights&extremes&days=7&lat=${LAT}&lon=${LON}&key=${API_KEY}`)
   .then(r=>{if(!r.ok)throw new Error('API '+r.status);return r.json();})
   .then(data=>{
     initWithData(
