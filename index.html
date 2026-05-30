@@ -64,8 +64,6 @@
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        .tide-header { text-align: center; margin-bottom: 10px; }
-        
         .scroll-container {
             width: 100%; height: 140px; overflow-x: auto; overflow-y: hidden; 
             scroll-behavior: auto; -webkit-overflow-scrolling: touch;
@@ -121,13 +119,11 @@
     </div>
 
     <script>
-        // === AQUÍ VA TU API KEY DE WORLDTIDES ===
         const API_KEY = "9946d5c9-2c16-435f-a7d5-72fff5c9b906"; 
 
         let marineData = [];
         let timeData = [];
         let extremesData = [];
-        const today = new Date();
         
         const dateDisplay = document.getElementById('date-display');
         const phaseName = document.getElementById('phase-name');
@@ -141,8 +137,7 @@
         const scrollContainer = document.getElementById('scroll-container');
 
         function formatDate(dateObj) {
-            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            return dateObj.toLocaleDateString('es-ES', options).toUpperCase();
+            return dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
         }
 
         function calculateMoon(date) {
@@ -178,166 +173,64 @@
             moonShadow.style.transform = `translateX(${offset}%)`;
         }
 
-        // MOTOR REEMPLAZADO: WORLDTIDES API
         function fetchMarineData() {
-            if (API_KEY === "PON_AQUI_TU_API_KEY") {
-                dateDisplay.innerText = "FALTA API KEY";
-                return;
-            }
-
-            const lat = 28.14; // Coordenadas de Las Canteras
-            const lon = -15.43;
-            // Pedimos 3 días de datos (alturas y picos extremos)
-            const url = `https://www.worldtides.info/api/v3?heights&extremes&days=3&lat=${lat}&lon=${lon}&key=${API_KEY}`;
+            const url = `https://www.worldtides.info/api/v3?heights&extremes&days=3&lat=28.14&lon=-15.43&key=${API_KEY}`;
             
             fetch(url)
-                .then(response => {
-                    if (response.ok) return response.json();
-                    throw new Error("Error de conexión");
-                })
+                .then(r => r.json())
                 .then(data => {
-                    // Extraemos alturas (vienen cada 30 min)
                     marineData = data.heights.map(h => h.height);
                     timeData = data.heights.map(h => new Date(h.dt * 1000));
-                    // Extraemos la información exacta de las horas de los picos
                     extremesData = data.extremes;
                     renderCanvas();
                     centerScrollOnNow();
                 })
-                .catch(error => {
-                    console.error("Error conectando a WorldTides", error);
-                });
+                .catch(e => console.error("Error API:", e));
         }
 
-        const PX_PER_STEP = 20; // Píxeles por cada tramo de 30 minutos
+        const PX_PER_STEP = 20;
 
         function renderCanvas() {
-            if(!marineData.length) return;
-
-            canvas.width = marineData.length * PX_PER_STEP;
-            canvas.height = 140; 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const minH = Math.min(...marineData); 
-            const maxH = Math.max(...marineData);
+            canvas.width = marineData.length * PX_PER_STEP; canvas.height = 140; 
+            const minH = Math.min(...marineData); const maxH = Math.max(...marineData);
             const range = (maxH - minH) || 1;
 
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height);
-            
+            ctx.beginPath(); ctx.moveTo(0, canvas.height);
             for(let i=0; i<marineData.length - 1; i++) {
-                const x0 = i * PX_PER_STEP;
-                const normalizedY0 = (marineData[i] - minH) / range;
-                const y0 = canvas.height - (normalizedY0 * (canvas.height - 60)) - 30; 
-
-                const x1 = (i + 1) * PX_PER_STEP;
-                const normalizedY1 = (marineData[i + 1] - minH) / range;
-                const y1 = canvas.height - (normalizedY1 * (canvas.height - 60)) - 30; 
-                
-                const cp1x = x0 + (x1 - x0) / 2; const cp1y = y0;
-                const cp2x = x0 + (x1 - x0) / 2; const cp2y = y1;
-                
-                if(i===0) ctx.moveTo(x0, y0);
-                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x1, y1);
+                const x0 = i * PX_PER_STEP; const y0 = canvas.height - (((marineData[i] - minH) / range) * 80) - 30; 
+                const x1 = (i + 1) * PX_PER_STEP; const y1 = canvas.height - (((marineData[i + 1] - minH) / range) * 80) - 30; 
+                ctx.bezierCurveTo(x0 + PX_PER_STEP/2, y0, x0 + PX_PER_STEP/2, y1, x1, y1);
             }
-            
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.closePath();
-
-            let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, "rgba(0, 210, 255, 0.4)");
-            gradient.addColorStop(1, "rgba(0, 40, 80, 0)");
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            ctx.beginPath();
-            for(let i=0; i<marineData.length - 1; i++) {
-                const x0 = i * PX_PER_STEP;
-                const normalizedY0 = (marineData[i] - minH) / range;
-                const y0 = canvas.height - (normalizedY0 * (canvas.height - 60)) - 30; 
-                const x1 = (i + 1) * PX_PER_STEP;
-                const normalizedY1 = (marineData[i + 1] - minH) / range;
-                const y1 = canvas.height - (normalizedY1 * (canvas.height - 60)) - 30; 
-                const cp1x = x0 + (x1 - x0) / 2; const cp1y = y0;
-                const cp2x = x0 + (x1 - x0) / 2; const cp2y = y1;
-                if(i===0) ctx.moveTo(x0, y0);
-                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x1, y1);
-            }
-            ctx.strokeStyle = "#00d2ff";
-            ctx.lineWidth = 3;
-            ctx.shadowColor = "#00d2ff"; ctx.shadowBlur = 10;
-            ctx.stroke();
-            ctx.shadowBlur = 0; 
-            
-            ctx.fillStyle = "white"; ctx.font = "10px -apple-system, sans-serif"; ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-
-            // Imprimir extremos exactos provenientes de la API
-            const startTime = timeData[0].getTime();
-            const stepMs = timeData[1].getTime() - startTime;
-
-            extremesData.forEach(ext => {
-                const extTime = ext.dt * 1000;
-                const index = (extTime - startTime) / stepMs;
-                const x = index * PX_PER_STEP;
-                
-                const normalizedY = (ext.height - minH) / range;
-                const y = canvas.height - (normalizedY * (canvas.height - 60)) - 30; 
-
-                const timeStr = new Date(extTime).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
-                
-                if (ext.type === "High") {
-                    ctx.fillText(`PLEAMAR (${timeStr})`, x, y - 20); 
-                    ctx.fillText("+" + ext.height.toFixed(1) + "M", x, y - 5);
-                } else {
-                    ctx.fillText(`BAJAMAR (${timeStr})`, x, y + 20); 
-                    ctx.fillText("+" + ext.height.toFixed(1) + "M", x, y + 30);
-                }
-            });
+            ctx.lineTo(canvas.width, canvas.height); ctx.closePath();
+            let gradient = ctx.createLinearGradient(0, 0, 0, 140);
+            gradient.addColorStop(0, "rgba(0, 210, 255, 0.4)"); gradient.addColorStop(1, "rgba(0, 40, 80, 0)");
+            ctx.fillStyle = gradient; ctx.fill();
+            ctx.strokeStyle = "#00d2ff"; ctx.lineWidth = 3; ctx.stroke();
         }
 
         function updateUIViaScroll() {
-            if(!timeData.length) return;
             const centerScrollX = scrollContainer.scrollLeft + (scrollContainer.clientWidth / 2);
             let hoverIndex = Math.floor(centerScrollX / PX_PER_STEP);
-            if (hoverIndex < 0) hoverIndex = 0; if (hoverIndex >= timeData.length) hoverIndex = timeData.length - 1;
-            const hoverDate = timeData[hoverIndex];
+            const hoverDate = timeData[hoverIndex] || new Date();
             
             dateDisplay.innerText = formatDate(hoverDate);
             const moon = calculateMoon(hoverDate);
             phaseName.innerText = moon.text; illumination.innerText = moon.illum + "%";
             drawMoon(moon.phaseValue);
             
-            const timeStr = hoverDate.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
-            currentTimeEl.innerText = timeStr;
+            currentTimeEl.innerText = hoverDate.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
             tideHeightEl.innerText = "+" + Math.max(...marineData).toFixed(1) + " M";
             
-            let foundNext = false;
-            for (let j = 0; j < extremesData.length; j++) {
-                if (extremesData[j].dt * 1000 > hoverDate.getTime()) {
-                    const ext = extremesData[j];
-                    const extTimeStr = new Date(ext.dt * 1000).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase();
-                    const typeName = ext.type === "High" ? "PLEAMAR" : "BAJAMAR";
-                    nextTideEl.innerText = `${typeName} (${extTimeStr})`;
-                    foundNext = true;
-                    break;
-                }
-            }
-            if(!foundNext) nextTideEl.innerText = "--:--";
+            let found = extremesData.find(e => e.dt * 1000 > hoverDate.getTime());
+            nextTideEl.innerText = found ? `${found.type === "High" ? "PLEAMAR" : "BAJAMAR"} (${new Date(found.dt*1000).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'}).toUpperCase()})` : "--:--";
         }
 
         function centerScrollOnNow() {
-            const now = new Date(); let closestIndex = 0; let minDiff = Infinity;
-            for(let i=0; i<timeData.length; i++) {
-                const diff = Math.abs(now - timeData[i]);
-                if(diff < minDiff) { minDiff = diff; closestIndex = i; }
-            }
-            const targetX = (closestIndex * PX_PER_STEP) - (scrollContainer.clientWidth / 2);
-            scrollContainer.scrollLeft = targetX;
+            scrollContainer.scrollLeft = ((new Date() - timeData[0]) / (30 * 60 * 1000)) * PX_PER_STEP - (scrollContainer.clientWidth / 2);
             updateUIViaScroll();
         }
 
-        scrollContainer.addEventListener('scroll', () => { requestAnimationFrame(updateUIViaScroll); });
+        scrollContainer.addEventListener('scroll', updateUIViaScroll);
         fetchMarineData();
     </script>
 </body>
