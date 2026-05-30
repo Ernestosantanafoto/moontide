@@ -32,9 +32,29 @@
             background-repeat: no-repeat;
         }
 
-        header { text-align: center; padding: 20px 10px 10px; z-index: 10; background-color: rgba(1, 4, 10, 0.3); }
+        header { text-align: center; padding: 20px 10px 10px; z-index: 10; background-color: rgba(1, 4, 10, 0.3); position: relative; }
         h1 { font-size: 14px; font-weight: 600; letter-spacing: 1px; color: var(--text-main); text-transform: uppercase; }
         #date-display { font-size: 12px; font-weight: 400; color: var(--text-muted); margin-top: 5px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        /* Botón de retorno al presente */
+        #btn-now {
+            position: absolute;
+            top: 20px;
+            right: 15px;
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        #btn-now:active { background: rgba(0, 229, 255, 0.3); transform: scale(0.95); }
 
         .moon-section {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 20px;
@@ -60,13 +80,13 @@
 
         .tide-section {
             flex: 1; background: rgba(0, 40, 80, 0.2); border-top-left-radius: 30px; border-top-right-radius: 30px;
-            backdrop-filter: blur(10px); padding: 20px 0; position: relative; display: flex; flex-direction: column;
+            backdrop-filter: blur(10px); padding: 15px 0 20px 0; position: relative; display: flex; flex-direction: column;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
         .scroll-container {
-            width: 100%; height: 140px; overflow-x: auto; overflow-y: hidden; 
-            scroll-behavior: auto; -webkit-overflow-scrolling: touch;
+            width: 100%; height: 180px; overflow-x: auto; overflow-y: hidden; 
+            scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
             scrollbar-width: none; position: relative;
         }
         .scroll-container::-webkit-scrollbar { display: none; }
@@ -74,8 +94,8 @@
         canvas { height: 100%; display: block; }
 
         .center-marker {
-            position: absolute; top: 0; left: 50%; width: 2px; height: 140px;
-            background: rgba(255, 255, 255, 0.4); border-left: 1px dashed var(--neon-blue);
+            position: absolute; top: 0; left: 50%; width: 2px; height: 180px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), var(--neon-blue) 70%, transparent);
             pointer-events: none; z-index: 10; transform: translateX(-50%);
         }
 
@@ -84,7 +104,7 @@
         .panel-label { font-size: 9px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
         .panel-value { font-size: 14px; font-weight: 600; text-transform: uppercase; }
         
-        .swipe-hint { text-align: center; font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: 5px; letter-spacing: 2px;}
+        .swipe-hint { text-align: center; font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: -5px; letter-spacing: 2px;}
     </style>
 </head>
 <body>
@@ -92,6 +112,7 @@
     <header>
         <h1>LAS PALMAS DE GRAN CANARIA</h1>
         <div id="date-display">CARGANDO...</div>
+        <button id="btn-now">VOLVER AHORA</button>
     </header>
 
     <div class="moon-section">
@@ -135,9 +156,14 @@
         const canvas = document.getElementById('tide-canvas');
         const ctx = canvas.getContext('2d');
         const scrollContainer = document.getElementById('scroll-container');
+        const btnNow = document.getElementById('btn-now');
 
         function formatDate(dateObj) {
             return dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+        }
+
+        function formatDateShort(dateObj) {
+            return dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }).toUpperCase();
         }
 
         function calculateMoon(date) {
@@ -161,14 +187,15 @@
             return { text: phaseText, illum: illum.toFixed(0), phaseValue: phase };
         }
 
+        // LUNA REDEFINIDA: Degradado nítido para marcar bien la forma de la fase
         function drawMoon(phaseValue) {
             let offset;
             if (phaseValue <= 0.5) {
                 offset = -(phaseValue * 200); 
-                moonShadow.style.background = 'linear-gradient(to right, rgba(1, 4, 10, 0.98) 50%, rgba(1, 4, 10, 0.8) 80%, rgba(1, 4, 10, 0) 100%)';
+                moonShadow.style.background = 'linear-gradient(to right, rgba(1, 4, 10, 0.98) 48%, rgba(1, 4, 10, 0.85) 52%, rgba(1, 4, 10, 0) 58%)';
             } else {
                 offset = 100 - ((phaseValue - 0.5) * 200);
-                moonShadow.style.background = 'linear-gradient(to left, rgba(1, 4, 10, 0.98) 50%, rgba(1, 4, 10, 0.8) 80%, rgba(1, 4, 10, 0) 100%)';
+                moonShadow.style.background = 'linear-gradient(to left, rgba(1, 4, 10, 0.98) 48%, rgba(1, 4, 10, 0.85) 52%, rgba(1, 4, 10, 0) 58%)';
             }
             moonShadow.style.transform = `translateX(${offset}%)`;
         }
@@ -188,29 +215,100 @@
                 .catch(e => console.error("Error API:", e));
         }
 
-        const PX_PER_STEP = 20;
+        const PX_PER_STEP = 25; // Más ancho para fluidez
+
+        function getCanvasY(height, minH, range) {
+            // Curva elevada dejando espacio debajo (70px para la línea de tiempo)
+            return canvas.height - (((height - minH) / range) * 80) - 60;
+        }
 
         function renderCanvas() {
-            canvas.width = marineData.length * PX_PER_STEP; canvas.height = 140; 
-            const minH = Math.min(...marineData); const maxH = Math.max(...marineData);
+            canvas.width = marineData.length * PX_PER_STEP; 
+            canvas.height = 180; // Aumentado para la línea de tiempo
+            
+            const minH = Math.min(...marineData); 
+            const maxH = Math.max(...marineData);
             const range = (maxH - minH) || 1;
 
-            ctx.beginPath(); ctx.moveTo(0, canvas.height);
-            for(let i=0; i<marineData.length - 1; i++) {
-                const x0 = i * PX_PER_STEP; const y0 = canvas.height - (((marineData[i] - minH) / range) * 80) - 30; 
-                const x1 = (i + 1) * PX_PER_STEP; const y1 = canvas.height - (((marineData[i + 1] - minH) / range) * 80) - 30; 
-                ctx.bezierCurveTo(x0 + PX_PER_STEP/2, y0, x0 + PX_PER_STEP/2, y1, x1, y1);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // ONDA PERFECTA: Trazado usando curvas cuadráticas entre puntos intermedios
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height); // Para rellenar
+            ctx.lineTo(0, getCanvasY(marineData[0], minH, range));
+            
+            for(let i = 0; i < marineData.length - 1; i++) {
+                const x0 = i * PX_PER_STEP; 
+                const y0 = getCanvasY(marineData[i], minH, range);
+                const x1 = (i + 1) * PX_PER_STEP; 
+                const y1 = getCanvasY(marineData[i+1], minH, range);
+                const xc = (x0 + x1) / 2;
+                const yc = (y0 + y1) / 2;
+                ctx.quadraticCurveTo(x0, y0, xc, yc);
             }
-            ctx.lineTo(canvas.width, canvas.height); ctx.closePath();
-            let gradient = ctx.createLinearGradient(0, 0, 0, 140);
-            gradient.addColorStop(0, "rgba(0, 210, 255, 0.4)"); gradient.addColorStop(1, "rgba(0, 40, 80, 0)");
-            ctx.fillStyle = gradient; ctx.fill();
-            ctx.strokeStyle = "#00d2ff"; ctx.lineWidth = 3; ctx.stroke();
+            ctx.lineTo((marineData.length - 1) * PX_PER_STEP, getCanvasY(marineData[marineData.length - 1], minH, range));
+            
+            // Cerrar relleno
+            ctx.lineTo(canvas.width, canvas.height); 
+            ctx.closePath();
+            
+            let gradient = ctx.createLinearGradient(0, 0, 0, 180);
+            gradient.addColorStop(0, "rgba(0, 210, 255, 0.4)"); 
+            gradient.addColorStop(1, "rgba(0, 40, 80, 0)");
+            ctx.fillStyle = gradient; 
+            ctx.fill();
+
+            // Dibujar la línea de la onda neón
+            ctx.beginPath();
+            ctx.moveTo(0, getCanvasY(marineData[0], minH, range));
+            for(let i = 0; i < marineData.length - 1; i++) {
+                const x0 = i * PX_PER_STEP; 
+                const y0 = getCanvasY(marineData[i], minH, range);
+                const x1 = (i + 1) * PX_PER_STEP; 
+                const y1 = getCanvasY(marineData[i+1], minH, range);
+                const xc = (x0 + x1) / 2;
+                const yc = (y0 + y1) / 2;
+                ctx.quadraticCurveTo(x0, y0, xc, yc);
+            }
+            ctx.lineTo((marineData.length - 1) * PX_PER_STEP, getCanvasY(marineData[marineData.length - 1], minH, range));
+            ctx.strokeStyle = "#00d2ff"; 
+            ctx.lineWidth = 3; 
+            ctx.shadowColor = "#00d2ff";
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Limpiar sombra
+
+            // LÍNEA DE TIEMPO (Bajo el mar)
+            ctx.textAlign = "center";
+            for (let i = 0; i < timeData.length; i++) {
+                const date = timeData[i];
+                const x = i * PX_PER_STEP;
+
+                // Marcas cada 6 horas (00, 06, 12, 18)
+                if (date.getMinutes() === 0 && date.getHours() % 6 === 0) {
+                    ctx.fillStyle = "rgba(255,255,255,0.5)";
+                    ctx.font = "9px -apple-system, sans-serif";
+                    ctx.fillText(date.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}).toUpperCase(), x, canvas.height - 10);
+                    // Pequeña muesca
+                    ctx.fillRect(x - 0.5, canvas.height - 25, 1, 4);
+                }
+
+                // Días (A las 12:00 del mediodía para centrarlo)
+                if (date.getHours() === 12 && date.getMinutes() === 0) {
+                    ctx.fillStyle = "rgba(255,255,255,0.9)";
+                    ctx.font = "bold 11px -apple-system, sans-serif";
+                    ctx.fillText(formatDateShort(date), x, canvas.height - 35);
+                }
+            }
         }
 
         function updateUIViaScroll() {
+            if(!timeData.length) return;
             const centerScrollX = scrollContainer.scrollLeft + (scrollContainer.clientWidth / 2);
             let hoverIndex = Math.floor(centerScrollX / PX_PER_STEP);
+            if (hoverIndex < 0) hoverIndex = 0; 
+            if (hoverIndex >= timeData.length) hoverIndex = timeData.length - 1;
+            
             const hoverDate = timeData[hoverIndex] || new Date();
             
             dateDisplay.innerText = formatDate(hoverDate);
@@ -226,11 +324,25 @@
         }
 
         function centerScrollOnNow() {
-            scrollContainer.scrollLeft = ((new Date() - timeData[0]) / (30 * 60 * 1000)) * PX_PER_STEP - (scrollContainer.clientWidth / 2);
+            if (!timeData.length) return;
+            const now = new Date();
+            // Buscar el índice de tiempo más cercano a "ahora"
+            let closestIndex = 0; 
+            let minDiff = Infinity;
+            for(let i = 0; i < timeData.length; i++) {
+                const diff = Math.abs(now - timeData[i]);
+                if(diff < minDiff) { 
+                    minDiff = diff; 
+                    closestIndex = i; 
+                }
+            }
+            scrollContainer.scrollLeft = (closestIndex * PX_PER_STEP) - (scrollContainer.clientWidth / 2);
             updateUIViaScroll();
         }
 
-        scrollContainer.addEventListener('scroll', updateUIViaScroll);
+        scrollContainer.addEventListener('scroll', () => requestAnimationFrame(updateUIViaScroll));
+        btnNow.addEventListener('click', centerScrollOnNow);
+        
         fetchMarineData();
     </script>
 </body>
